@@ -1,0 +1,31 @@
+Content :
+
+This directory contains the tools to build the GRAND monitoring system.
+
+It contains the following files :
+- base.dockerfile : The docker definition to build a container with cern's ROOT, Python and all the libs required by grandlib
+- requirements.txt : The list of python libraries needed to use grandlib and included in the grandlib_base container
+- build_base.bash : A simple script to rebuild the grandlib_base image
+- monitoring.dockerfile : A docker definition to build the docker container including the grandlib code and gtot. These softs will be installed in /opt/grandlib/softs/.
+- build_monitoring.bash : A simple script to build the grandlib_monitoring image
+- softs : The directory containing gtot and grandlib to be installed into the grandlib_monitoring container
+- docker-compose.yml : The recipie to launch the whole monitoring system (i.e. the grandlib container to run gtot and grandlib, the timescaledb database and the grafana container to visualize the data).
+- .env : The file containing some variable shared by grafana and timescaledb (database name, login, password,...)
+- grafana_provisioning: Directory containing the grafana dashboards and datasource definition which are provisioned when creating the grafana container and volume
+- db_init: Directory containing the definition of the timescaledb database (schema, tables, functions) provisioned when creating the timescaledb container and volumes.
+
+Notes:
+gtot need to be compiled. So it will be compiled using the softs/gtot version in this directory when the container is build. If you need a different version of gtot, you need to update it in softs/gtot and rebuild the container.
+grandlib (in softs/grand) is copied into the container at build time, but the docker compose also mount the directory inside the docker. So every change in softs/grand will be visible in real time the docker container (if launched using the docker-compose.yml).
+
+HowTo:
+
+If you want to rebuild with a different version of gtot, simply go to the corresponding directory in softs/<grand|gtot> and checkout the version you want. Once done, go back to the main directory and rebuild the images by runing build_monitoring.bash.
+
+To save the containers into a tarball, just do :
+docker save -o grandlib_monitoring.tar grandlib_monitoring
+
+To add the tarball to the local docker registery just do :
+docker load -i grandlib_monitoring.tar
+
+
