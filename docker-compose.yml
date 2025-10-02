@@ -1,0 +1,59 @@
+services:
+  grandlib:
+    image: grandlib_monitoring
+    container_name: grandlib
+    restart: unless-stopped
+    volumes:
+      - ${DATA_FOLDER}:/home/data  
+      - ./softs/grand:/opt/grandlib/softs/grand
+    environment:
+      - DATABASE_HOST=timescaledb
+      - DATABASE_PORT=5432
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+    networks:
+      - grandnet
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg17
+    container_name: timescaledb
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - /home/fleg/DEVDOCKER/volumes/timescaledb:/var/lib/postgresql/data
+      - ./db_init:/docker-entrypoint-initdb.d
+    networks:
+      - grandnet
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - /home/fleg/DEVDOCKER/volumes/grafana:/var/lib/grafana
+      - ./grafana_provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana_provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./grafana_provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - timescaledb
+    networks:
+      - grandnet
+
+networks:
+  grandnet:
+
+    #volumes:
+    #  timescale_data:
+    #  grafana_data:

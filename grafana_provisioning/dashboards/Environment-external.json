@@ -1,0 +1,894 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_GRAND",
+      "label": "GRAND",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.19+security-01"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "T",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 120000,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.19+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH range AS (\n  SELECT\n    $__timeFrom()::timestamptz AS from_time,\n    $__timeTo()::timestamptz AS to_time\n),\nbucket AS (\n  SELECT CASE\n    WHEN to_time - from_time <= interval '48 hour' THEN '1 minute'\n    WHEN to_time - from_time <= interval '4 days' THEN '5 minutes'\n    WHEN to_time - from_time <= interval '8 days' THEN '10 minutes'\n    WHEN to_time - from_time <= interval '15 days' THEN '30 minutes'\n    ELSE '1 hour'\n  END::interval AS interval\n  FROM range\n),\ndevices AS (\n  SELECT DISTINCT du_id FROM monitoring.antennas\n),\nbuckets AS (\n  SELECT DISTINCT time_bucket((SELECT interval FROM bucket), datetime) AS bucket_time\n  FROM monitoring.mesures\n  WHERE datetime BETWEEN (SELECT from_time FROM range) AND (SELECT to_time FROM range)\n),\ncombined AS (\n  SELECT b.bucket_time AS time, d.du_id\n  FROM buckets b\n  CROSS JOIN devices d\n)\nSELECT\n  c.time,\n  c.du_id,\n  ROUND(AVG(m.temperature)::numeric, 2) AS temperature\nFROM combined c\nLEFT JOIN monitoring.mesures m\n  ON m.du_id = c.du_id\n  AND time_bucket((SELECT interval FROM bucket), m.datetime) = c.time\nGROUP BY c.time, c.du_id\nORDER BY c.time, c.du_id;\n\n\n/*WITH range AS (\n  SELECT\n    $__timeFrom()::timestamptz AS from_time,\n    $__timeTo()::timestamptz AS to_time\n),\nbucket AS (\n  SELECT CASE\n    WHEN to_time - from_time <= interval '6 hour' THEN '1 minute'\n    WHEN to_time - from_time <= interval '24 hours' THEN '5 minutes'\n    WHEN to_time - from_time <= interval '7 days' THEN '10 minutes'\n    WHEN to_time - from_time <= interval '15 days' THEN '30 minutes'\n    ELSE '1 hours'\n  END AS interval\n  FROM range\n)\nSELECT\n  time_bucket(bucket.interval::interval, m.datetime)::timestamptz AS time, \n  m.du_id,\n  AVG(m.temperature) AS temperature\nFROM monitoring.mesures m\nJOIN bucket ON TRUE\nWHERE $__timeFilter(m.datetime)\nGROUP BY time, m.du_id\nORDER BY time, m.du_id;\n*/\n\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [
+                  {
+                    "name": "*",
+                    "type": "functionParameter"
+                  }
+                ],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "name": "du_id",
+                  "type": "string"
+                },
+                "type": "groupBy"
+              },
+              {
+                "property": {
+                  "name": "datetime",
+                  "type": "string"
+                },
+                "type": "groupBy"
+              },
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "mesures"
+        }
+      ],
+      "title": "Temperatures",
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "du_id",
+            "rowField": "time",
+            "valueField": "temperature"
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "time",
+                "targetField": "time\\du_id"
+              }
+            ],
+            "fields": {}
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "series",
+            "axisLabel": "V",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 120000,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "timezone": [
+          "utc"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "asc"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH range AS (\n  SELECT\n    $__timeFrom()::timestamptz AS from_time,\n    $__timeTo()::timestamptz AS to_time\n),\nbucket AS (\n  SELECT CASE\n    WHEN to_time - from_time <= interval '48 hour' THEN '1 minute'\n    WHEN to_time - from_time <= interval '4 days' THEN '5 minutes'\n    WHEN to_time - from_time <= interval '8 days' THEN '10 minutes'\n    WHEN to_time - from_time <= interval '15 days' THEN '30 minutes'\n    ELSE '1 hour'\n  END::interval AS interval\n  FROM range\n),\ndevices AS (\n  SELECT DISTINCT du_id FROM monitoring.antennas\n),\nbuckets AS (\n  SELECT DISTINCT time_bucket((SELECT interval FROM bucket), datetime) AS bucket_time\n  FROM monitoring.mesures\n  WHERE datetime BETWEEN (SELECT from_time FROM range) AND (SELECT to_time FROM range)\n),\ncombined AS (\n  SELECT b.bucket_time AS time, d.du_id\n  FROM buckets b\n  CROSS JOIN devices d\n)\nSELECT\n  c.time,\n  c.du_id,\n  ROUND(AVG(m.voltage)::numeric, 2) AS voltage\nFROM combined c\nLEFT JOIN monitoring.mesures m\n  ON m.du_id = c.du_id\n  AND time_bucket((SELECT interval FROM bucket), m.datetime) = c.time\nGROUP BY c.time, c.du_id\nORDER BY c.time, c.du_id;\n/*\nSELECT\n  time_bucket(bucket.interval::interval, m.datetime) AS time,\n  m.du_id,\n  AVG(m.voltage) AS voltage\nFROM monitoring.mesures m\nJOIN bucket ON TRUE\nWHERE $__timeFilter(m.datetime)\nGROUP BY time, m.du_id\nORDER BY time, m.du_id;\n*/",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [
+                  {
+                    "name": "*",
+                    "type": "functionParameter"
+                  }
+                ],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "name": "du_id",
+                  "type": "string"
+                },
+                "type": "groupBy"
+              },
+              {
+                "property": {
+                  "name": "datetime",
+                  "type": "string"
+                },
+                "type": "groupBy"
+              },
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "mesures"
+        }
+      ],
+      "title": "Voltages",
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "du_id",
+            "rowField": "time",
+            "valueField": "voltage"
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "time",
+                "targetField": "time\\du_id"
+              }
+            ],
+            "fields": {}
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "#up DUs",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 14,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "up DUs",
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH time_series AS (\n  SELECT generate_series(\n    date_trunc('hour', $__timeFrom()::timestamptz),\n    date_trunc('hour', $__timeTo()::timestamptz),\n    interval '1 hour'\n  ) AS time\n),\nactive_counts AS (\n  SELECT\n    time_bucket('1 hour', m.datetime) AS time,\n    COUNT(DISTINCT du_id) AS du_count\n  FROM monitoring.mesures m\n  WHERE $__timeFilter(m.datetime)\n  GROUP BY time\n)\nSELECT\n  ts.time,\n  COALESCE(ac.du_count, 0) AS count\nFROM time_series ts\nLEFT JOIN active_counts ac ON ts.time = ac.time\nORDER BY ts.time;\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Number of up DUs (by hour)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "fieldMinMax": false,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 4,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.4.19+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH params AS (\n  SELECT \n    date_trunc('minute', $__timeFrom()::timestamptz)  AS start_time, \n    date_trunc('minute', $__timeTo()::timestamptz) AS end_time\n),\nup_minutes AS (\n  SELECT \n    (1 + EXTRACT(EPOCH FROM (p.end_time - p.start_time)) / 60) AS minutes_diff\n  FROM params p\n),\ndevices AS (\n  SELECT DISTINCT du_id \n  FROM monitoring.antennas\n),\ndata as (SELECT\n  d.du_id, \n  time_bucket('5 minutes', m.datetime) ,\n  (CASE WHEN COUNT(temperature) IS NOT NULL THEN CASE WHEN COUNT(temperature) > 0 THEN 5 ELSE 0 END ELSE 0 END) AS t_up\nFROM devices d LEFT OUTER JOIN monitoring.mesures m on d.du_id=m.du_id and $__timeFilter(datetime)\nGROUP BY time_bucket,d.du_id\nORDER BY d.du_id)\n\nSELECT\n  d.du_id,\n  100 * LEAST(SUM(d.t_up),u.minutes_diff::bigint) / u.minutes_diff AS uptime_percentage\nFROM data d\nCROSS JOIN up_minutes u\nGROUP BY d.du_id,u.minutes_diff\nORDER BY d.du_id, uptime_percentage;\n\n/*\nWITH params AS (\n  SELECT \n    date_trunc('minute', $__timeFrom()::timestamptz)  AS start_time, \n    date_trunc('minute', $__timeTo()::timestamptz) AS end_time\n),\nup_minutes AS (\n  SELECT \n    (1 + EXTRACT(EPOCH FROM (p.end_time - p.start_time)) / 60) AS minutes_diff\n  FROM params p\n),\ndevices AS (\n  SELECT DISTINCT du_id \n  FROM monitoring.mesures\n)\n\nSELECT\n  d.du_id,\n  100 * COUNT(m.temperature) / u.minutes_diff AS uptime_percentage\nFROM devices d\nCROSS JOIN params p\nCROSS JOIN up_minutes u\nLEFT JOIN monitoring.mesures m \n  ON d.du_id = m.du_id\n  AND m.datetime BETWEEN p.start_time AND p.end_time\nGROUP BY d.du_id, u.minutes_diff\nORDER BY d.du_id, uptime_percentage;\n\n*/\n/*\nSELECT du as du_id, uptime_percentage\nFROM monitoring.device_uptime_in_range_all($__timeFrom()::timestamptz,$__timeTo()::timestamptz)\nORDER BY du_id\n*/\n/*\nWITH params AS (\n  SELECT \n    $__timeFrom()::timestamp AS start_time, \n    $__timeTo()::timestamp AS end_time\n),\ntotal_minutes AS (\n  SELECT \n    EXTRACT(EPOCH FROM (end_time - start_time)) / 60 AS total_minutes\n  FROM params\n),\ndevices AS (\n  SELECT DISTINCT du_id \n  FROM mesures\n  \n),\nup_minutes AS (\n  SELECT \n    du_id,\n    COUNT(*) AS count\n  FROM mesures, params\n  WHERE \n    datetime >= params.start_time AND \n    datetime < params.end_time\n  GROUP BY du_id\n)\nSELECT\n  d.du_id,\n  COALESCE(u.count, 0) AS up_minutes,\n  t.total_minutes,\n  CASE \n    WHEN t.total_minutes > 0 \n      THEN (COALESCE(u.count, 0) * 100.0) / t.total_minutes \n    ELSE 0 \n  END AS uptime_percentage\nFROM devices d\nCROSS JOIN total_minutes t\nLEFT JOIN up_minutes u ON d.du_id = u.du_id\nORDER BY uptime_percentage, d.du_id;\n*/",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "uptime percentage (over 5mn bins)",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {}
+          }
+        },
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "du_id",
+            "emptyValue": "null",
+            "rowField": "uptime_percentage",
+            "valueField": "uptime_percentage"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "1059",
+                "1065",
+                "1035",
+                "1051",
+                "1044",
+                "1019",
+                "1074",
+                "103",
+                "109",
+                "1010",
+                "1011",
+                "1012",
+                "1013",
+                "1014",
+                "1016",
+                "1017",
+                "1018",
+                "1020",
+                "1022",
+                "1023",
+                "1024",
+                "1029",
+                "1030",
+                "1032",
+                "1033",
+                "1034",
+                "1037",
+                "1038",
+                "1039",
+                "1040",
+                "1041",
+                "1042",
+                "1043",
+                "1045",
+                "1046",
+                "1047",
+                "1048",
+                "1049",
+                "1052",
+                "1054",
+                "1055",
+                "1056",
+                "1057",
+                "1058",
+                "1066",
+                "1071",
+                "1072",
+                "1073",
+                "1075",
+                "1076",
+                "1077",
+                "1078",
+                "1081",
+                "1082",
+                "1084",
+                "1085",
+                "1086",
+                "1088",
+                "1089",
+                "1090",
+                "1091",
+                "1092",
+                "1093",
+                "1094"
+              ]
+            }
+          }
+        }
+      ],
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "fieldMinMax": false,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "super-light-red"
+              },
+              {
+                "color": "super-light-orange",
+                "value": 50
+              },
+              {
+                "color": "blue",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 8,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.4.19+security-01",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "WITH params AS (\n  SELECT \n    date_trunc('minute', $__timeFrom()::timestamptz)  AS start_time, \n    date_trunc('minute', $__timeTo()::timestamptz) AS end_time\n),\nup_minutes AS (\n  SELECT \n    (EXTRACT(EPOCH FROM (p.end_time - p.start_time)) / 60) AS minutes_diff\n  FROM params p\n),\ndevices AS (\n  SELECT DISTINCT du_id \n  FROM monitoring.antennas\n),\ndata as (SELECT\n  d.du_id, \n  m.datetime,\n  (CASE WHEN COUNT(temperature) IS NOT NULL THEN CASE WHEN COUNT(temperature) > 0 THEN 1 ELSE 0 END ELSE 0 END) AS t_up\nFROM devices d LEFT OUTER JOIN monitoring.mesures m on d.du_id=m.du_id and $__timeFilter(datetime)\nGROUP BY m.datetime, d.du_id\nORDER BY d.du_id)\n\nSELECT\n  d.du_id,\n  100 * LEAST(SUM(d.t_up),u.minutes_diff::bigint) / u.minutes_diff AS uptime_percentage\nFROM data d\nCROSS JOIN up_minutes u\nGROUP BY d.du_id,u.minutes_diff\nORDER BY d.du_id, uptime_percentage;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Effective data taking percentage",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {}
+          }
+        },
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "du_id",
+            "emptyValue": "null",
+            "rowField": "uptime_percentage",
+            "valueField": "uptime_percentage"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "1059",
+                "1065",
+                "1035",
+                "1051",
+                "1044",
+                "1019",
+                "1074",
+                "103",
+                "109",
+                "1010",
+                "1011",
+                "1012",
+                "1013",
+                "1014",
+                "1016",
+                "1017",
+                "1018",
+                "1020",
+                "1022",
+                "1023",
+                "1024",
+                "1029",
+                "1030",
+                "1032",
+                "1033",
+                "1034",
+                "1037",
+                "1038",
+                "1039",
+                "1040",
+                "1041",
+                "1042",
+                "1043",
+                "1045",
+                "1046",
+                "1047",
+                "1048",
+                "1049",
+                "1052",
+                "1054",
+                "1055",
+                "1056",
+                "1057",
+                "1058",
+                "1066",
+                "1071",
+                "1072",
+                "1073",
+                "1075",
+                "1076",
+                "1077",
+                "1078",
+                "1081",
+                "1082",
+                "1084",
+                "1085",
+                "1086",
+                "1088",
+                "1089",
+                "1090",
+                "1091",
+                "1092",
+                "1093",
+                "1094"
+              ]
+            }
+          }
+        }
+      ],
+      "type": "gauge"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Environment",
+  "uid": "e3e3b16b-8a01-4623-a000-b3e470b7d48a",
+  "version": 54,
+  "weekStart": ""
+}

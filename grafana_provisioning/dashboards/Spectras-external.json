@@ -1,0 +1,391 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_GRAND",
+      "label": "GRAND",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.19+security-01"
+    },
+    {
+      "type": "datasource",
+      "id": "grafana-postgresql-datasource",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "xychart",
+      "name": "XY Chart",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "#up DUs",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "up DUs",
+          "fieldMinMax": false,
+          "mappings": [],
+          "max": 80,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH time_series AS (\n  SELECT generate_series(\n    date_trunc('hour', $__timeFrom()::timestamptz),\n    date_trunc('hour', $__timeTo()::timestamptz),\n    interval '1 hour'\n  ) AS time\n),\nactive_counts AS (\n  SELECT\n    time_bucket('1 hour', m.datetime) AS time,\n    COUNT(DISTINCT du_id) AS du_count\n  FROM monitoring.mesures m\n  WHERE $__timeFilter(m.datetime)\n  GROUP BY time\n)\nSELECT\n  ts.time,\n  COALESCE(ac.du_count, 0) AS count\nFROM time_series ts\nLEFT JOIN active_counts ac ON ts.time = ac.time\nORDER BY ts.time;\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Number of up DUs",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_GRAND}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "Frequency (Hz)",
+            "axisPlacement": "left",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "pointSize": {
+              "fixed": 5
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "show": "lines"
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "chan_0"
+            },
+            "properties": [
+              {
+                "id": "custom.scaleDistribution",
+                "value": {
+                  "log": 10,
+                  "type": "log"
+                }
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Power"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 7
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mapping": "auto",
+        "series": [
+          {
+            "x": {
+              "matcher": {
+                "id": "byName",
+                "options": "freq"
+              }
+            }
+          }
+        ],
+        "seriesMapping": "auto",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "repeat": "DU_ID",
+      "repeatDirection": "h",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_GRAND}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nWITH spec_expl AS (\nSELECT datetime, du_id,  weight, unnest(powers_0) as _0, unnest(powers_1) as _1, unnest(powers_2) as _2, unnest(powers_3) as _3, unnest(freq) AS freq\n   FROM monitoring.spectres, monitoring.frequences\n   WHERE monitoring.spectres.len =monitoring.frequences.len\n   AND\n   (\n    ('$Time_spectra' = 'All' AND $__timeFilter(datetime))\n    OR\n    ('$Time_spectra' != 'All' AND  datetime BETWEEN\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz - INTERVAL '1 minute')\n      AND\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz + INTERVAL '1 minute'))\n  )\n\n\n   AND du_id=$DU_ID\n   GROUP BY du_id, datetime, freq\n   --, ordinality\n   )\nSELECT   freq,  SUM(_0*weight)/SUM(weight) as chan_0,  SUM(_1*weight)/SUM(weight) as chan_1,  SUM(_2*weight)/SUM(weight) as chan_2, SUM(_3*weight)/SUM(weight) as chan_3\n--SELECT  du_id, freq,  AVG(sp) as avgx\nFROM spec_expl\nWHERE freq > 0.1\nGROUP BY   freq\nORDER BY   freq\n\n/*\nSELECT frequency, AVG(chan_x) AS chan_x, AVG(chan_y) AS chan_y, AVG(chan_z) AS chan_z\nFROM spectre_expanded_recent se\nWHERE du_id = $DU_ID \nAND datetime >= (now() - interval '1 month') AND datetime <= $__timeTo()\nAND frequency > 0.1\nAND\n  (\n    ('$Time_spectra' = 'All' AND $__timeFilter(se.datetime))\n    OR\n    ('$Time_spectra' != 'All' AND  se.datetime BETWEEN\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz - INTERVAL '1 minute')\n      AND\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz + INTERVAL '1 minute'))\n  )\n\nGROUP BY frequency\n\nUNION ALL\n\nSELECT f.freq[idx] AS frequency,\n       AVG(s.x_powers[idx]) AS chan_x,\n       AVG(s.y_powers[idx]) AS chan_y,\n       AVG(s.z_powers[idx]) AS chan_z\nFROM spectres s\nJOIN frequences f ON s.len = f.len,\n     generate_subscripts(s.x_powers, 1) AS idx\nWHERE du_id = $DU_ID \nAND s.datetime >= $__timeFrom() \nAND s.datetime < (now() - interval '1 month')\nAND\n  (\n    ('$Time_spectra' = 'All' AND $__timeFilter(s.datetime))\n    OR\n    ('$Time_spectra' != 'All' AND  s.datetime BETWEEN\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz - INTERVAL '1 minute')\n      AND\n      (to_timestamp('$Time_spectra', 'YYYY-MM-DD HH24:MI:SS')::timestamptz + INTERVAL '1 minute'))\n  )\nAND f.freq[idx] > 0.1\nGROUP BY frequency\nORDER BY frequency;\n*/",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "spectres"
+        }
+      ],
+      "title": "FFT for DU $DU_ID",
+      "type": "xychart"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_GRAND}"
+        },
+        "definition": "SELECT  DISTINCT du_id\nFROM monitoring.spectres\nWHERE $__timeFilter(datetime)\nORDER BY du_id",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "DU_ID",
+        "options": [],
+        "query": "SELECT  DISTINCT du_id\nFROM monitoring.spectres\nWHERE $__timeFilter(datetime)\nORDER BY du_id",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 3,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_GRAND}"
+        },
+        "definition": "SELECT 'All' AS time_str\nUNION \nSELECT  DISTINCT \nto_char(datetime, 'YYYY-MM-DD HH24:MI:SS')\nFROM monitoring.spectres\nWHERE $__timeFilter(datetime)\nORDER BY time_str DESC",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "Time_spectra",
+        "options": [],
+        "query": "SELECT 'All' AS time_str\nUNION \nSELECT  DISTINCT \nto_char(datetime, 'YYYY-MM-DD HH24:MI:SS')\nFROM monitoring.spectres\nWHERE $__timeFilter(datetime)\nORDER BY time_str DESC",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "utc",
+  "title": "Spectras",
+  "uid": "e2e34ec7-e3aa-4a24-915c-b9a1a8c4fb04",
+  "version": 12,
+  "weekStart": ""
+}

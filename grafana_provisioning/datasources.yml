@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: GRAND
+    uid: GRAND
+    type: postgres
+    access: proxy
+    url: timescaledb:5432
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    isDefault: true
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: true
+      database: ${POSTGRES_DB}
+
