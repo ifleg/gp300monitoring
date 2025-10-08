@@ -74,6 +74,7 @@ python-dateutil
 scipy
 scp
 semantic-version
+setuptools
 six
 sqlalchemy
 sshtunnel
@@ -89,5 +90,6 @@ tzdata
 uncertainties
 uproot
 urllib3
+watchdog
 wcwidth
 wrapt

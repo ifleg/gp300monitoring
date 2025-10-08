@@ -3,15 +3,18 @@ services:
     image: grandlib_monitoring
     container_name: grandlib
     restart: unless-stopped
+    user: "${UID}:${GID}"
     volumes:
       - ${DATA_FOLDER}:/home/data  
       - ./softs/grand:/opt/grandlib/softs/grand
+      - ./watcher.py:/home/watcher.py
     environment:
       - DATABASE_HOST=timescaledb
       - DATABASE_PORT=5432
       - DATABASE_USER=${DATABASE_USER}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_NAME=${DATABASE_NAME}
+    command: ["python3", "/home/watcher.py"]
     networks:
       - grandnet
 
@@ -19,6 +22,7 @@ services:
     image: timescale/timescaledb:latest-pg17
     container_name: timescaledb
     restart: unless-stopped
+    user: "${UID}:${GID}"
     environment:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
@@ -32,6 +36,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    user: "${UID}:${GID}"
     restart: unless-stopped
     ports:
       - "3000:3000"

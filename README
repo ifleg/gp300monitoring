@@ -18,14 +18,29 @@ Notes:
 gtot need to be compiled. So it will be compiled using the softs/gtot version in this directory when the container is build. If you need a different version of gtot, you need to update it in softs/gtot and rebuild the container.
 grandlib (in softs/grand) is copied into the container at build time, but the docker compose also mount the directory inside the docker. So every change in softs/grand will be visible in real time the docker container (if launched using the docker-compose.yml).
 
+/opt/grandlib/softs will contains all the grandlib tools :
+- gtot is on : /opt/grandlib/softs/gtot/cmake-build-release/gtot
+- grandlib is on : /opt/grandlib/softs/grand/
+
 HowTo:
 
-If you want to rebuild with a different version of gtot, simply go to the corresponding directory in softs/<grand|gtot> and checkout the version you want. Once done, go back to the main directory and rebuild the images by runing build_monitoring.bash.
+If you want to rebuild with a different version of gtot, simply go to the corresponding directory in softs/<grand|gtot> and checkout the version you want.
+Once done, go back to the main directory and rebuild the images by runing build_monitoring.bash.
 
-To save the containers into a tarball, just do :
+To save the image into a tarball, just do :
 docker save -o grandlib_monitoring.tar grandlib_monitoring
 
 To add the tarball to the local docker registery just do :
 docker load -i grandlib_monitoring.tar
+
+Usage:
+To run gtot from the host you can do something like : 
+docker exec grandlib gtot -g1 -os -i /home/data/raw/GP80_20250925_115500_RUN268_MD_20dB-GP65-10s-33DUs-filtering-saved-0135.bin -o /home/data/GrandRoot/GP80_20250925_115500_RUN268_MD_20dB-GP65-10s-33DUs-filtering-saved-0135.root
+
+Or from inside the docker : 
+/opt/grandlib/softs/gtot/cmake-build-release/gtot -g1 -os -i /home/data/raw/GP80_20250925_115500_RUN268_MD_20dB-GP65-10s-33DUs-filtering-saved-0135.bin -o /home/data/GrandRoot/GP80_20250925_115500_RUN268_MD_20dB-GP65-10s-33DUs-filtering-saved-0135.root
+
+To run a grandlib script you can :
+docker exec grandlib python3 /opt/grandlib/softs/grand/granddb/monitoring_site.py -f /home/data/GrandRoot/GP80_20250925_141743_RUN268_MD_20dB-GP65-10s-33DUs-filtering-saved-0139.root
 
 

@@ -1,7 +1,7 @@
 {
   "__inputs": [
     {
-      "name": "DS_GRAND",
+      "name": "GRAND",
       "label": "GRAND",
       "description": "",
       "type": "datasource",
@@ -61,7 +61,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_GRAND}"
+        "uid": "GRAND"
       },
       "fieldConfig": {
         "defaults": {
@@ -153,7 +153,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_GRAND}"
+            "uid": "GRAND"
           },
           "editorMode": "code",
           "format": "table",
@@ -227,7 +227,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_GRAND}"
+        "uid": "GRAND"
       },
       "fieldConfig": {
         "defaults": {
@@ -318,7 +318,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_GRAND}"
+            "uid": "GRAND"
           },
           "editorMode": "code",
           "format": "table",
@@ -392,7 +392,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_GRAND}"
+        "uid": "GRAND"
       },
       "fieldConfig": {
         "defaults": {
@@ -482,7 +482,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_GRAND}"
+            "uid": "GRAND"
           },
           "editorMode": "code",
           "format": "table",
@@ -514,7 +514,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_GRAND}"
+        "uid": "GRAND"
       },
       "fieldConfig": {
         "defaults": {
@@ -573,7 +573,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_GRAND}"
+            "uid": "GRAND"
           },
           "editorMode": "code",
           "format": "table",
@@ -696,7 +696,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "${DS_GRAND}"
+        "uid": "GRAND"
       },
       "fieldConfig": {
         "defaults": {
@@ -754,7 +754,7 @@
         {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "${DS_GRAND}"
+            "uid": "GRAND"
           },
           "editorMode": "code",
           "format": "table",
